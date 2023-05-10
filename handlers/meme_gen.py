@@ -4,6 +4,7 @@ import io
 import requests
 import aiohttp
 import asyncio
+import base64
 from keyboards.rate import make_row_keyboard
 from aiogram import Bot, Dispatcher, types, F, Router
 from aiogram.filters.command import Command
@@ -11,11 +12,20 @@ from aiogram.filters.text import Text
 from aiogram.types import FSInputFile, BufferedInputFile, ReplyKeyboardRemove, Message, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from settings import config
-
+from . import schemas
+import pydantic
+from pydantic_aiohttp import Client
 
 
 router = Router()
 
+
+@router.message(Command("test_rate"))
+async def reply_builder(message: types.Message):
+    await message.answer(
+        "Rate from 1 to 10 how funny the meme is:",
+        reply_markup=make_row_keyboard(),
+    )
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -29,36 +39,17 @@ async def download_photo(message: types.Message, bot: Bot):
         destination=image_in_bytes_io
     )
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post('http://127.0.0.1:8000/meme_gen', data=image_in_bytes_io) as resp:
-            print(resp.status)
-            id_to_rate = resp.headers['X-Meme-id']
-            lol = await resp.read()
-
-        await message.answer_photo(
+    resp = schemas.Meme_generated.parse_obj(requests.post('http://127.0.0.1:8000/meme_gen', data=image_in_bytes_io).json())
+    await message.answer_photo(
                 BufferedInputFile(
-                    lol,
+                    base64.b64decode(resp.content),
                     filename="image.jpg"
                 ),
                 caption="Your meme"
             )
-
-@router.message(Command("test_rate"))
-async def reply_builder(message: types.Message):
-    await message.answer(
-        "Rate from 1 to 10 how funny the meme is:",
-        reply_markup=make_row_keyboard(),
-    )
-
-
-#class Chose_Rate(StatesGroup):
-    #rate: State()
-
-
-
-
+    await reply_builder()
 
 
 @router.message(F.animation)
 async def echo_gif(message: types.Message):
-    await message.reply_animation(message.animation.file_id, caption="Only pics!")#
+    await message.reply_animation(message.animation.file_id, caption="Only pics!")
