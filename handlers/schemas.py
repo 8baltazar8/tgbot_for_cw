@@ -1,12 +1,13 @@
 from pydantic import BaseModel, ValidationError, validator, Field
-from typing import Optional, List, IO
+from typing import Optional, List, IO, Text
 
 import re
 
 
 class Meme(BaseModel):
-    meme_text: str
     category: str
+    meme_text: str
+
 
     @validator('category')
     def category_must_be_lowercasealpha(cls, category):
@@ -22,6 +23,7 @@ class Post_Meme(Meme):
     class Config:
         orm_mode = True
 
+
 class Meme_by_category(BaseModel):
     memes: List[Post_Meme]
 # ________________________________
@@ -30,3 +32,8 @@ class Meme_by_category(BaseModel):
 class Meme_generated(BaseModel):
     id: int
     content: bytes
+
+
+class User_rate(BaseModel):
+    id: int
+    grade: int
