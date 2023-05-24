@@ -7,6 +7,7 @@ import asyncio
 import json
 import base64
 from keyboards.rate import make_row_keyboard
+from keyboards.yes_no_sug_meme import yes_no_keys
 from aiogram import Bot, Dispatcher, types, F, Router
 from aiogram.filters.command import Command
 from aiogram.filters.text import Text
@@ -27,16 +28,15 @@ class Grade_meme(StatesGroup):
     meme_grade = State()
 
 
-@router.message(Command("test_rate"))
-async def reply_builder(message: types.Message):
+
+@router.message(Command(commands=["cancel"]))
+async def cmd_cancel(message: Message, state: FSMContext):
+    await state.clear()
     await message.answer(
-        "Rate from 1 to 10 how funny the meme is:",
-        reply_markup=make_row_keyboard(),
+        text="Canceled",
+        reply_markup=ReplyKeyboardRemove()
     )
 
-@router.message(Command("start"))
-async def cmd_start(message: types.Message):
-    await message.answer("Hey! Sand me pic and I will generate meme for you!")
 
 @router.message(F.photo)
 async def download_photo(message: types.Message, bot: Bot, state: FSMContext):
@@ -45,22 +45,39 @@ async def download_photo(message: types.Message, bot: Bot, state: FSMContext):
         message.photo[-1],
         destination=image_in_bytes_io
     )
+    raw_resp = requests.post('http://127.0.0.1:8000/meme_gen', data=image_in_bytes_io)
+    resp = schemas.Meme_generated.parse_obj(raw_resp.json())
+    if raw_resp.status_code == 404:
+        await message.answer("404 wtf")
 
-    resp = schemas.Meme_generated.parse_obj(requests.post('http://127.0.0.1:8000/meme_gen', data=image_in_bytes_io).json())
-    await message.answer_photo(
+    if resp.id == 404:
+        await message.answer_photo(
+                BufferedInputFile(
+                    base64.b64decode(resp.content),
+                    filename="image.jpg"
+                ),
+                caption="<i>It seems that all the technical potential of mankind could not find a suitable text for your picture...</i>"
+            )
+        await message.answer(
+            "Want to add text to images in this category?\n\n"
+            "<i>We do not guarantee that the text you suggest will be used with this image next time.</i>",
+            reply_markup=yes_no_keys(),
+        )
+        await state.set_state(schemas.Sug_meme_404.start_meme_sug)
+    else:
+        await message.answer_photo(
                 BufferedInputFile(
                     base64.b64decode(resp.content),
                     filename="image.jpg"
                 ),
                 caption="Your meme"
             )
-    #await reply_builder("Your meme")
-    await state.update_data(id=str(resp.id))
-    await message.answer(
-        "Rate from 1 to 10 how funny the meme is:",
-        reply_markup=make_row_keyboard(),
-    )
-    await state.set_state(Grade_meme.meme_grade)
+        await state.update_data(id=str(resp.id))
+        await message.answer(
+            "Rate from 1 to 10 how funny the meme is:",
+            reply_markup=make_row_keyboard(),
+        )
+        await state.set_state(Grade_meme.meme_grade)
 
 @router.message(Grade_meme.meme_grade, F.text.in_([str(x) for x in list(range(1, 11))]))
 async def graded(message: Message, state: FSMContext):
@@ -82,6 +99,21 @@ async def graded_incorrectly(message: Message):
         reply_markup=make_row_keyboard(),
     )
 
-@router.message(F.animation)
-async def echo_gif(message: types.Message):
-    await message.reply_animation(message.animation.file_id, caption="Only pics!")
+
+
+@router.message(schemas.Sug_meme_404.start_meme_sug, F.text == "Yes")
+async def suggest_a_mem_404_yes(message: types.Message, state: FSMContext):
+    await message.answer("We would love to hear your text for the meme!\n\n"
+                         "Please enter the general category of your meme now.\n"
+                         "It should be one word in English (for example, 'cat' or 'Dog').\n\n"
+                         "<b>Numbers and special characters are not allowed. Only letters...</b>",
+                         reply_markup=ReplyKeyboardRemove())
+    await state.set_state(schemas.Sug_meme.meme_category)
+
+
+@router.message(schemas.Sug_meme_404.start_meme_sug, F.text.lower() == "no")
+async def suggest_a_mem_404_no(message: types.Message, state: FSMContext):
+    await message.answer("Okay\n\n"
+                         "<i>Have a nice day!</i>",
+                         reply_markup=ReplyKeyboardRemove())
+    await state.clear()
