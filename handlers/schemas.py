@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ValidationError, validator, Field
-from typing import Optional, List, IO, Text
+from typing import Optional, List, IO, Text, Any
 from aiogram.fsm.state import State, StatesGroup
 
 import re
@@ -33,11 +33,16 @@ class Meme_by_category(BaseModel):
 class Meme_generated(BaseModel):
     id: int
     content: bytes
+    categories: Optional[List[str]]
 
 
 class User_rate(BaseModel):
     id: int
     grade: int
+
+
+class User_categories(BaseModel):
+    categories: Optional[List[str]]
 
 
 class Sug_meme(StatesGroup):
@@ -47,3 +52,12 @@ class Sug_meme(StatesGroup):
 
 class Sug_meme_404(StatesGroup):
     start_meme_sug = State()
+
+
+class Dem_generated(BaseModel):
+    content: bytes
+
+
+class Dem_in(BaseModel):
+    text: str
+    payload: Any

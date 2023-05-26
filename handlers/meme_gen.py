@@ -29,15 +29,6 @@ class Grade_meme(StatesGroup):
 
 
 
-@router.message(Command(commands=["cancel"]))
-async def cmd_cancel(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer(
-        text="Canceled",
-        reply_markup=ReplyKeyboardRemove()
-    )
-
-
 @router.message(F.photo)
 async def download_photo(message: types.Message, bot: Bot, state: FSMContext):
     image_in_bytes_io = io.BytesIO()
@@ -45,39 +36,55 @@ async def download_photo(message: types.Message, bot: Bot, state: FSMContext):
         message.photo[-1],
         destination=image_in_bytes_io
     )
-    raw_resp = requests.post('http://127.0.0.1:8000/meme_gen', data=image_in_bytes_io)
-    resp = schemas.Meme_generated.parse_obj(raw_resp.json())
-    if raw_resp.status_code == 404:
-        await message.answer("404 wtf")
-
-    if resp.id == 404:
+    if message.caption:
+        data_to_send: schemas.Dem_in = schemas.Dem_in.parse_obj({'text': message.caption,
+                                                                 'payload': base64.b64encode(image_in_bytes_io.read()).decode('utf-8')})
+        #print("0"*100)
+        raw_resp = requests.post('http://127.0.0.1:8000/dem_gen', data=data_to_send.json())
+        resp = schemas.Dem_generated.parse_obj(raw_resp.json())
         await message.answer_photo(
-                BufferedInputFile(
-                    base64.b64decode(resp.content),
-                    filename="image.jpg"
-                ),
-                caption="<i>It seems that all the technical potential of mankind could not find a suitable text for your picture...</i>"
-            )
-        await message.answer(
-            "Want to add text to images in this category?\n\n"
-            "<i>We do not guarantee that the text you suggest will be used with this image next time.</i>",
-            reply_markup=yes_no_keys(),
-        )
-        await state.set_state(schemas.Sug_meme_404.start_meme_sug)
+                    BufferedInputFile(
+                        base64.b64decode(resp.content),
+                        filename="image.jpg"
+                    ),
+                    caption="Your demotivator"
+                )
     else:
-        await message.answer_photo(
-                BufferedInputFile(
-                    base64.b64decode(resp.content),
-                    filename="image.jpg"
-                ),
-                caption="Your meme"
+        raw_resp = requests.post('http://127.0.0.1:8000/meme_gen', data=image_in_bytes_io)
+        resp = schemas.Meme_generated.parse_obj(raw_resp.json())
+        if raw_resp.status_code == 404:
+            await message.answer("404 wtf")
+
+        if resp.id == 404:
+            await message.answer_photo(
+                    BufferedInputFile(
+                        base64.b64decode(resp.content),
+                        filename="image.jpg"
+                    ),
+                    caption="<i>It seems that all the technical potential of mankind could not find a suitable text for your picture...</i>"
+                )
+            await message.answer(
+                "Want to add text to images in this category?\n\n"
+                "<i>We do not guarantee that the text you suggest will be used with this image next time.</i>",
+                reply_markup=yes_no_keys(),
             )
-        await state.update_data(id=str(resp.id))
-        await message.answer(
-            "Rate from 1 to 10 how funny the meme is:",
-            reply_markup=make_row_keyboard(),
-        )
-        await state.set_state(Grade_meme.meme_grade)
+            await state.update_data(categories=resp.categories)
+            await state.set_state(schemas.Sug_meme_404.start_meme_sug)
+        else:
+            await message.answer_photo(
+                    BufferedInputFile(
+                        base64.b64decode(resp.content),
+                        filename="image.jpg"
+                    ),
+                    caption="Your meme"
+                )
+            await state.update_data(id=str(resp.id))
+            await state.update_data(categories=resp.categories)
+            await message.answer(
+                "Rate from 1 to 10 how funny the meme is:",
+                reply_markup=make_row_keyboard(),
+            )
+            await state.set_state(Grade_meme.meme_grade)
 
 @router.message(Grade_meme.meme_grade, F.text.in_([str(x) for x in list(range(1, 11))]))
 async def graded(message: Message, state: FSMContext):
@@ -103,11 +110,18 @@ async def graded_incorrectly(message: Message):
 
 @router.message(schemas.Sug_meme_404.start_meme_sug, F.text == "Yes")
 async def suggest_a_mem_404_yes(message: types.Message, state: FSMContext):
-    await message.answer("We would love to hear your text for the meme!\n\n"
-                         "Please enter the general category of your meme now.\n"
-                         "It should be one word in English (for example, 'cat' or 'Dog').\n\n"
-                         "<b>Numbers and special characters are not allowed. Only letters...</b>",
-                         reply_markup=ReplyKeyboardRemove())
+    user_data = await state.get_data()
+    categories = user_data['categories']
+    dflt_str = ("Please enter the general category of your meme now.\n" +
+                "It should be one word in English (for example, 'cat' or 'Dog').\n\n" +
+                "<b>Numbers and special characters are not allowed. Only letters...</b>")
+    if categories:
+        await message.answer(f"My computer eyes saw the following categories in your picture:\n\n<b>{', '.join(categories)}</b>\n\n",
+                             reply_markup=ReplyKeyboardRemove())
+        await message.answer(dflt_str)
+    else:
+        await message.answer("We would love to hear your text for the meme!\n\n"+dflt_str,
+                             reply_markup=ReplyKeyboardRemove())
     await state.set_state(schemas.Sug_meme.meme_category)
 
 
