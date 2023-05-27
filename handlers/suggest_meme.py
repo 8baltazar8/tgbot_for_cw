@@ -1,24 +1,10 @@
-import asyncio
-import logging
-import io
 import requests
-import aiohttp
-import asyncio
-import json
-import base64
-from keyboards.rate import make_row_keyboard
-from aiogram import Bot, Dispatcher, types, F, Router
+from aiogram import types, F, Router
 from aiogram.filters.command import Command
-from aiogram.filters.text import Text
-from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from aiogram.types import FSInputFile, BufferedInputFile, ReplyKeyboardRemove, Message, ReplyKeyboardMarkup
-from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
-from settings import config
+from aiogram.types import Message
 from . import schemas
 from .filters.correct_meme import Correct_category, Correct_meme_text
-import pydantic
-from pydantic_aiohttp import Client
 
 
 router = Router()
@@ -61,7 +47,7 @@ async def text_cor(message: Message, state: FSMContext):
     await message.answer("Your meme has been successfully recorded!\n\n"
                          "<i>You better hope it's funny, or you'll be banned for life.........</i>")
     # print(schemas.Meme.parse_obj(user_data).json())
-    requests.post('http://127.0.0.1:8000/post_meme', data=schemas.Meme.parse_obj(user_data).json())
+    requests.post('https://memeinator-api.herokuapp.com/post_meme', data=schemas.Meme.parse_obj(user_data).json())
     await state.clear()
 
 

@@ -4,16 +4,9 @@ import base64
 from keyboards.rate import make_row_keyboard
 from keyboards.yes_no_sug_meme import yes_no_keys
 from aiogram import Bot, types, F, Router
-from aiogram.filters.command import Command
-from aiogram.filters.text import Text
-from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from aiogram.types import FSInputFile, BufferedInputFile, ReplyKeyboardRemove, Message, ReplyKeyboardMarkup
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
-from settings import config
+from aiogram.types import BufferedInputFile, ReplyKeyboardRemove, Message
 from . import schemas
-import pydantic
-from pydantic_aiohttp import Client
 
 
 router = Router()
@@ -30,7 +23,7 @@ async def download_photo(message: types.Message, bot: Bot, state: FSMContext):
         data_to_send: schemas.Dem_in = schemas.Dem_in.parse_obj({'text': message.caption,
                                                                  'payload': base64.b64encode(image_in_bytes_io.read()).decode('utf-8')})
         #print("0"*100)
-        raw_resp = requests.post('http://127.0.0.1:8000/dem_gen', data=data_to_send.json())
+        raw_resp = requests.post('https://memeinator-api.herokuapp.com/dem_gen', data=data_to_send.json())
         resp = schemas.Dem_generated.parse_obj(raw_resp.json())
         await message.answer_photo(
                     BufferedInputFile(
@@ -41,7 +34,7 @@ async def download_photo(message: types.Message, bot: Bot, state: FSMContext):
                 )
     else:
         payload_to_send: schemas.Meme_in = schemas.Meme_in.parse_obj({'payload': base64.b64encode(image_in_bytes_io.read()).decode('utf-8')})
-        raw_resp = requests.post('http://127.0.0.1:8000/meme_gen', data=payload_to_send.json())
+        raw_resp = requests.post('https://memeinator-api.herokuapp.com/meme_gen', data=payload_to_send.json())
         resp = schemas.Meme_generated.parse_obj(raw_resp.json())
         if raw_resp.status_code == 404:
             await message.answer("404 wtf")
@@ -86,7 +79,7 @@ async def graded(message: Message, state: FSMContext):
         reply_markup=ReplyKeyboardRemove()
     )
     await state.clear()
-    requests.put('http://127.0.0.1:8000/rate_meme', schemas.User_rate.parse_obj(user_data).json())
+    requests.put('https://memeinator-api.herokuapp.com/rate_meme', schemas.User_rate.parse_obj(user_data).json())
     #print(schemas.User_rate.parse_obj(user_data).json())
 
 

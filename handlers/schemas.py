@@ -1,5 +1,5 @@
-from pydantic import BaseModel, ValidationError, validator, Field
-from typing import Optional, List, IO, Text, Any
+from pydantic import BaseModel, validator
+from typing import Optional, List
 from aiogram.fsm.state import State, StatesGroup
 
 import re
