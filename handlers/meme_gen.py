@@ -1,14 +1,9 @@
-import asyncio
-import logging
 import io
 import requests
-import aiohttp
-import asyncio
-import json
 import base64
 from keyboards.rate import make_row_keyboard
 from keyboards.yes_no_sug_meme import yes_no_keys
-from aiogram import Bot, Dispatcher, types, F, Router
+from aiogram import Bot, types, F, Router
 from aiogram.filters.command import Command
 from aiogram.filters.text import Text
 from aiogram.fsm.state import State, StatesGroup
@@ -22,11 +17,6 @@ from pydantic_aiohttp import Client
 
 
 router = Router()
-
-
-class Grade_meme(StatesGroup):
-    meme_grade = State()
-
 
 
 @router.message(F.photo)
@@ -50,7 +40,8 @@ async def download_photo(message: types.Message, bot: Bot, state: FSMContext):
                     caption="Your demotivator"
                 )
     else:
-        raw_resp = requests.post('http://127.0.0.1:8000/meme_gen', data=image_in_bytes_io)
+        payload_to_send: schemas.Meme_in = schemas.Meme_in.parse_obj({'payload': base64.b64encode(image_in_bytes_io.read()).decode('utf-8')})
+        raw_resp = requests.post('http://127.0.0.1:8000/meme_gen', data=payload_to_send.json())
         resp = schemas.Meme_generated.parse_obj(raw_resp.json())
         if raw_resp.status_code == 404:
             await message.answer("404 wtf")
@@ -76,7 +67,7 @@ async def download_photo(message: types.Message, bot: Bot, state: FSMContext):
                         base64.b64decode(resp.content),
                         filename="image.jpg"
                     ),
-                    caption="Your meme"
+                    caption=f"Your meme\n\nCategories:\n\n<b>{', '.join(resp.categories)}</b>"
                 )
             await state.update_data(id=str(resp.id))
             await state.update_data(categories=resp.categories)
@@ -84,9 +75,9 @@ async def download_photo(message: types.Message, bot: Bot, state: FSMContext):
                 "Rate from 1 to 10 how funny the meme is:",
                 reply_markup=make_row_keyboard(),
             )
-            await state.set_state(Grade_meme.meme_grade)
+            await state.set_state(schemas.Grade_meme.meme_grade)
 
-@router.message(Grade_meme.meme_grade, F.text.in_([str(x) for x in list(range(1, 11))]))
+@router.message(schemas.Grade_meme.meme_grade, F.text.in_([str(x) for x in list(range(1, 11))]))
 async def graded(message: Message, state: FSMContext):
     await state.update_data(grade=message.text.lower())
     user_data = await state.get_data()
@@ -99,7 +90,7 @@ async def graded(message: Message, state: FSMContext):
     #print(schemas.User_rate.parse_obj(user_data).json())
 
 
-@router.message(Grade_meme.meme_grade)
+@router.message(schemas.Grade_meme.meme_grade)
 async def graded_incorrectly(message: Message):
     await message.answer(
         "You have to rate the meme from 1 to 10 !\n\nPlease try again:",

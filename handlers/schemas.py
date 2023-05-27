@@ -54,10 +54,18 @@ class Sug_meme_404(StatesGroup):
     start_meme_sug = State()
 
 
+class Grade_meme(StatesGroup):
+    meme_grade = State()
+
+
 class Dem_generated(BaseModel):
     content: bytes
 
 
 class Dem_in(BaseModel):
     text: str
-    payload: Any
+    payload: bytes
+
+
+class Meme_in(BaseModel):
+    payload: bytes
