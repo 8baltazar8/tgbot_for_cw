@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
-from handlers import meme_gen, suggest_meme, top_base, bottom_base
+from handlers import meme_gen, suggest_meme, top_base, bottom_base, random
 from settings import config
 
 logging.basicConfig(level=logging.INFO)
@@ -13,6 +13,7 @@ async def main():
     dp.include_routers(top_base.router)
     dp.include_routers(meme_gen.router)
     dp.include_routers(suggest_meme.router)
+    dp.include_router(random.router)
     dp.include_routers(bottom_base.router)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
