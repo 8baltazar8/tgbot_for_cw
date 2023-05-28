@@ -19,7 +19,6 @@ async def suggest_a_meme(message: types.Message, state: FSMContext):
     await state.set_state(schemas.Sug_meme.meme_category)
 
 
-
 @router.message(schemas.Sug_meme.meme_category, F.text, Correct_category())
 async def category_cor(message: Message, state: FSMContext):
     await state.update_data(category=message.text)
@@ -28,7 +27,6 @@ async def category_cor(message: Message, state: FSMContext):
                          "You can type anything you want, but you only have <strong>60 characters...</strong>\n\n"
                          "<i>Unfunny memes will not be accepted</i>")
     await state.set_state(schemas.Sug_meme.meme_text_sug)
-
 
 
 @router.message(schemas.Sug_meme.meme_category)
@@ -57,23 +55,3 @@ async def text_incorrectly(message: Message):
         "...You can type any text you want, but you only have <strong>60 characters...</strong>\n\n"
         "<i>Unfunny memes will not be accepted</i>",
     )
-
-
-#GAVNO GAVNA
-# @router.message(Command("random"))
-# async def cmd_random(message: types.Message):
-#     builder = InlineKeyboardBuilder()
-#     builder.add(types.InlineKeyboardButton(
-#         text="LALALA",
-#         callback_data="random_value")
-#     )
-#     await message.answer(
-#         "LOL",
-#         reply_markup=builder.as_markup()
-#     )
-
-
-# @router.callback_query(Text("random_value"))
-# async def send_random_value(callback: types.CallbackQuery):
-#     await callback.message.answer("/suggest_a_meme")
-#     await callback.answer("LOWLQPL{QLDPQWDQWKDKQWD}")
