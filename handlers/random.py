@@ -11,7 +11,7 @@ router = Router()
 @router.message(Command(commands=["random"]))
 async def cmd_cancel(message: Message, state: FSMContext):
     await state.clear()
-    meme = schemas.Random_meme.parse_obj(requests.get('https://memeinator-api.herokuapp.com/random_meme'))
+    meme = schemas.Random_meme.parse_obj(requests.get('https://memeinator-api.herokuapp.com/random_meme').json())
     await message.answer(
         text=f"{meme.meme_text}",
         reply_markup=ReplyKeyboardRemove()

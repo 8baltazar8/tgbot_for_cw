@@ -27,7 +27,6 @@ async def cmd_help(message: types.Message, state: FSMContext):
     await message.answer("<b>This bot allows you to create memes.</b>\n\n\n"
                          "👾 Send me a picture and you'll get a meme with the most appropriate text according to the AI.\n\n"
                          "👾 Send a picture with a text - get a demotivator.\n\n"
-                         "👾 You can also suggest your own texts for memes for the AI to use.\n\n"
                          "👾 You can also suggest your own texts for memes using the /suggest_a_meme command.\n\n"
                          "👾 The /cancel command cancels any action.\n\n\n"
                          "<b>Just follow the instructions</b>",)
