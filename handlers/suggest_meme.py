@@ -12,6 +12,7 @@ router = Router()
 
 @router.message(Command("suggest_a_meme"))
 async def suggest_a_meme(message: types.Message, state: FSMContext):
+    await state.clear()
     await message.answer("We would love to hear your text for the meme!\n\n"
                          "Please enter the general category of your meme now.\n"
                          "It should be one word in English (for example, 'cat' or 'Dog').\n\n"

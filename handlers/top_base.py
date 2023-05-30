@@ -24,6 +24,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 @router.message(Command("help"))
 async def cmd_help(message: types.Message, state: FSMContext):
+    await state.clear()
     await message.answer("<b>This bot allows you to create memes.</b>\n\n\n"
                          "👾 Send me a picture and you'll get a meme with the most appropriate text according to the AI.\n\n"
                          "👾 Send a picture with a text - get a demotivator.\n\n"

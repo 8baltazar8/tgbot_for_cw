@@ -14,6 +14,7 @@ router = Router()
 
 @router.message(F.photo)
 async def download_photo(message: types.Message, bot: Bot, state: FSMContext):
+    await state.clear()
     image_in_bytes_io = io.BytesIO()
     await bot.download(
         message.photo[-1],
@@ -69,6 +70,7 @@ async def download_photo(message: types.Message, bot: Bot, state: FSMContext):
                 reply_markup=make_row_keyboard(),
             )
             await state.set_state(schemas.Grade_meme.meme_grade)
+
 
 @router.message(schemas.Grade_meme.meme_grade, F.text.in_([str(x) for x in list(range(1, 11))]))
 async def graded(message: Message, state: FSMContext):
